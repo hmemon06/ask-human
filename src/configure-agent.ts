@@ -65,8 +65,15 @@ const body = {
         dynamic_variable_placeholders: { user_name: config.userName, claude_briefing: "(no briefing provided)", session_id: "" },
       },
     },
-    tts: { agent_output_audio_format: "ulaw_8000" },
-    asr: { user_input_audio_format: "ulaw_8000" },
+    // Audio quality: turbo model, no latency-for-quality trade, 16 kHz source (LiveKit transcodes for PSTN).
+    tts: {
+      model_id: process.env.VOICE_TTS_MODEL ?? "eleven_turbo_v2",
+      agent_output_audio_format: process.env.VOICE_OUTPUT_FORMAT ?? "pcm_16000",
+      optimize_streaming_latency: Number(process.env.VOICE_LATENCY_MODE ?? 1),
+      stability: 0.45,
+      similarity_boost: 0.8,
+    },
+    asr: { user_input_audio_format: process.env.VOICE_INPUT_FORMAT ?? "pcm_16000" },
   },
   platform_settings: {
     // SIP path: ElevenLabs asks our server for the briefing when the call connects.

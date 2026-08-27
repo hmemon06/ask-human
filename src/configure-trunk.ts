@@ -25,7 +25,7 @@ const outbound_trunk_config = {
   media_encryption: process.env.SIP_TRUNK_MEDIA_ENCRYPTION ?? "disabled",
   credentials: { username: need("SIP_TRUNK_USERNAME"), password: need("SIP_TRUNK_PASSWORD") },
   // Keep the SDP small (a fat INVITE overflows UDP MTU) — PSTN audio is 8 kHz anyway.
-  enabled_codecs: ["PCMU/8000", "PCMA/8000"],
+  enabled_codecs: ["G722/8000", "PCMU/8000", "PCMA/8000"], // G.722 = HD voice when the far end supports it
 };
 
 const list: any = await (await fetch("https://api.elevenlabs.io/v1/convai/phone-numbers", { headers })).json();
