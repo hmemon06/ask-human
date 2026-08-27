@@ -116,5 +116,16 @@ destructive/irreversible, make the most reasonable assumption, document it, and 
 - Webhook is acked immediately and processed async; duplicate deliveries are ignored once a session is done.
 - State is in memory. Restarting the server mid-call loses the session (Claude gets a timeout → `unavailable`).
 
-## Running always-on
-Deploy `npm run server` to any small always-on host (Render / Azure / Fly), set the same env vars, point the ElevenLabs webhook at it, and set `ASK_HUMAN_SERVER_URL` in the MCP shim's `.env` to that URL. Claude Code keeps running wherever it already runs.
+## Hosted (Render free tier) — the way it actually runs
+Service `ask-human` in Render (`https://ask-human.onrender.com`, region Ohio, auto-deploys from `master`). Build `npm ci && npm run build`, start `npm start`. All `.env` keys live as Render env vars; `PUBLIC_URL=https://ask-human.onrender.com`. ElevenLabs' post-call and initiation webhooks point there (`npm run configure-webhook` / `configure-agent` with that `PUBLIC_URL`).
+
+Claude Code talks to it over **MCP Streamable HTTP** — no local process:
+```bash
+claude mcp add --scope user --transport http ask-human https://ask-human.onrender.com/mcp --header "Authorization: Bearer <ASK_HUMAN_TOKEN>"
+```
+This works from laptop Claude Code and from cloud sessions alike. The tool handler emits an MCP log notification every 20s so the streamed response survives proxy idle timeouts during a long call.
+
+Free-tier caveats:
+- The instance sleeps after 15 min idle; the first `ask_human` after that takes ~30–60s to wake before the phone rings.
+- Sessions are in memory. A deploy **during** a call kills the session (the post-call webhook then arrives at a fresh instance and is ignored). Don't push while a call is up.
+- Rotating the webhook secret (`configure-webhook` after a URL change) requires updating `ELEVENLABS_WEBHOOK_SECRET` in Render's env — which itself triggers a deploy.
